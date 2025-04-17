@@ -23,17 +23,20 @@ app.config.update({
     'SECRET_KEY': os.urandom(24),  # For session security
 })
 
+# Get Redis URL from environment variable or default to localhost
+REDIS_URL = os.getenv('REDIS_URL', 'redis://localhost:6379/0')
+
 # Setup Celery
 celery = Celery(
     app.name,
-    broker='redis://localhost:6379/0',
-    backend='redis://localhost:6379/0'
+    broker=REDIS_URL,
+    backend=REDIS_URL
 )
 celery.conf.update(app.config)
 
 # Setup directories
-for folder in [app.config['UPLOAD_FOLDER'], 
-               app.config['UNBUNDLED_FOLDER'], 
+for folder in [app.config['UPLOAD_FOLDER'],
+               app.config['UNBUNDLED_FOLDER'],
                app.config['SIGNED_FOLDER']]:
     os.makedirs(folder, exist_ok=True)
 
@@ -52,7 +55,7 @@ limiter = Limiter(
     app=app,
     key_func=get_remote_address,
     default_limits=["10 per hour"],
-    storage_uri="redis://localhost:6379/0"  # Use Redis for rate limit storage
+    storage_uri=REDIS_URL  # Use the same Redis URL
 )
 
 def allowed_file(filename):
@@ -90,16 +93,16 @@ def run_apktool(command, args):
 def unbundle_task(self, filename, apk_path, output_dir, zip_filename, zip_path):
     self.update_state(state='PROGRESS', meta={'progress': 20})
     shutil.rmtree(output_dir, ignore_errors=True)
-    
+
     if not run_apktool('d', ['-f', '-o', output_dir, apk_path]):
         raise Exception("Failed to unbundle APK")
-    
+
     self.update_state(state='PROGRESS', meta={'progress': 60})
     sanitize_public_xml(output_dir)
-    
+
     self.update_state(state='PROGRESS', meta={'progress': 90})
     shutil.make_archive(zip_path.replace('.zip', ''), 'zip', output_dir)
-    
+
     self.update_state(state='PROGRESS', meta={'progress': 100})
     return {'download_url': f'/download/{zip_filename}'}
 
@@ -108,11 +111,11 @@ def rebuild_task(self, filename, zip_path, extracted_dir, output_apk, keystore_p
     self.update_state(state='PROGRESS', meta={'progress': 20})
     shutil.rmtree(extracted_dir, ignore_errors=True)
     shutil.unpack_archive(zip_path, extracted_dir)
-    
+
     self.update_state(state='PROGRESS', meta={'progress': 60})
     if not run_apktool('b', ['-o', output_apk, extracted_dir]):
         raise Exception("Failed to rebuild APK")
-    
+
     self.update_state(state='PROGRESS', meta={'progress': 90})
     try:
         result = subprocess.run(
@@ -132,7 +135,7 @@ def rebuild_task(self, filename, zip_path, extracted_dir, output_apk, keystore_p
     except subprocess.CalledProcessError as e:
         logging.error(f"Failed to sign APK: {e.stderr} (Command: {e.cmd})")
         raise Exception(f"Failed to sign APK: {e.stderr}")
-    
+
     self.update_state(state='PROGRESS', meta={'progress': 100})
     return {'download_url': f'/download/rebuilt_{filename.replace(".zip", ".apk")}'}
 
@@ -153,7 +156,7 @@ def about():
 def unbundle_apk():
     if 'file' not in request.files:
         return jsonify({'error': 'No file part'}), 400
-    
+
     file = request.files['file']
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
@@ -165,14 +168,14 @@ def unbundle_apk():
         filename = secure_filename(file.filename)
         apk_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(apk_path)
-        
+
         output_dir = os.path.join(app.config['UNBUNDLED_FOLDER'], os.path.splitext(filename)[0])
         zip_filename = f"unbundled_{filename.split('.')[0]}.zip"
         zip_path = os.path.join(app.config['UPLOAD_FOLDER'], zip_filename)
-        
+
         task = unbundle_task.apply_async(args=[filename, apk_path, output_dir, zip_filename, zip_path])
         return jsonify({'task_id': task.id}), 202
-    
+
     except Exception as e:
         logging.error(f"Unbundling error: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -182,23 +185,23 @@ def unbundle_apk():
 def rebuild_apk():
     if 'file' not in request.files:
         return jsonify({'error': 'Missing ZIP file'}), 400
-    
+
     zip_file = request.files['file']
     keystore_file = request.files.get('keystore')
     keystore_password = request.form.get('keystore_password', 'android')
     key_alias = request.form.get('key_alias', 'androiddebugkey')
-    
+
     if zip_file.filename == '':
         return jsonify({'error': 'No ZIP file selected'}), 400
-    
+
     if not allowed_file(zip_file.filename):
         return jsonify({'error': 'Invalid ZIP file type'}), 400
-    
+
     try:
         zip_filename = secure_filename(zip_file.filename)
         zip_path = os.path.join(app.config['UPLOAD_FOLDER'], zip_filename)
         zip_file.save(zip_path)
-        
+
         if keystore_file and keystore_file.filename != '':
             if not allowed_file(keystore_file.filename):
                 return jsonify({'error': 'Invalid keystore file type'}), 400
@@ -209,16 +212,16 @@ def rebuild_apk():
             keystore_path = 'debug.keystore'  # Fallback to default
             if not os.path.exists(keystore_path):
                 return jsonify({'error': 'Default keystore not found'}), 500
-        
+
         extracted_dir = os.path.join(app.config['UNBUNDLED_FOLDER'], os.path.splitext(zip_filename)[0])
         output_apk = os.path.join(app.config['SIGNED_FOLDER'], f"rebuilt_{zip_filename.replace('.zip', '.apk')}")
-        
+
         task = rebuild_task.apply_async(args=[
             zip_filename, zip_path, extracted_dir, output_apk,
             keystore_path, keystore_password, key_alias
         ])
         return jsonify({'task_id': task.id}), 202
-    
+
     except Exception as e:
         logging.error(f"Rebuilding error: {str(e)}")
         return jsonify({'error': str(e)}), 500
@@ -248,7 +251,7 @@ def download_file(filename):
         directory = app.config['SIGNED_FOLDER']
     else:
         return jsonify({'error': 'Invalid file type'}), 400
-    
+
     return send_file(os.path.join(directory, filename), as_attachment=True)
 
 if __name__ == '__main__':
