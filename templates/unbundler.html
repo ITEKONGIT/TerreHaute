@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>APK Unbundler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: monospace;
+        }
+
+        body {
+            background: #0f0f0f url('https://www.transparenttextures.com/patterns/green-cup.png');
+            color: #00ff00;
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 200px;
+            background-color: #1a1a1a;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            border-right: 1px solid #00ff00;
+        }
+
+        .sidebar button {
+            background: #000;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar button:hover {
+            background: #00ff00;
+            color: #000;
+        }
+
+        .main {
+            flex: 1;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .main form {
+            background-color: rgba(0, 255, 0, 0.05);
+            padding: 30px;
+            border: 1px dashed #00ff00;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 500px;
+        }
+
+        .file-input-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 10px;
+            border: 1px dashed #00ff00;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-label:hover {
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        .file-input {
+            position: absolute;
+            width: 0.1px;
+            height: 0.1px;
+            opacity: 0;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .main button {
+            padding: 10px 20px;
+            background: #000;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .main button:hover {
+            background: #00ff00;
+            color: #000;
+        }
+
+        .main button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #status {
+            margin-top: 20px;
+            font-size: 0.9em;
+            min-height: 20px;
+            text-align: center;
+        }
+
+        .error {
+            color: #ff5555;
+        }
+
+        .success {
+            color: #55ff55;
+        }
+
+        .progress-bar {
+            width: 100%;
+            max-width: 500px;
+            height: 10px;
+            background: #1a1a1a;
+            border: 1px solid #00ff00;
+            margin-top: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #00ff00;
+            transition: width 0.3s ease;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 2px solid rgba(0, 255, 0, 0.3);
+            border-radius: 50%;
+            border-top-color: #00ff00;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <button onclick="location.href='/'">Unbundle APK</button>
+        <button onclick="location.href='/builder'">APK Builder</button>
+        <button onclick="location.href='/about'">About</button>
+    </div>
+
+    <div class="main">
+        <h2>APK Unbundler</h2>
+        <form id="fileForm" enctype="multipart/form-data">
+            <div class="file-input-container">
+                <label for="fileInput" class="file-input-label" id="fileLabel">
+                    Choose APK file or drag here
+                </label>
+                <input type="file" id="fileInput" class="file-input" name="file" accept=".apk" required>
+            </div>
+            <button type="submit" id="submitBtn">Unbundle APK</button>
+        </form>
+        <div id="status"></div>
+        <div id="progress" class="progress-bar" style="display: none;">
+            <div id="progressFill" class="progress-fill" style="width: 0%;"></div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileLabel = document.getElementById('fileLabel');
+        const form = document.getElementById('fileForm');
+        const status = document.getElementById('status');
+        const submitBtn = document.getElementById('submitBtn');
+        const progressBar = document.getElementById('progress');
+        const progressFill = document.getElementById('progressFill');
+
+        // Prompt for credentials (stored temporarily)
+        let credentials = null;
+        function promptCredentials() {
+            const username = prompt('Enter username:');
+            if (!username) return false;
+            const password = prompt('Enter password:');
+            if (!password) return false;
+            credentials = { username, password };
+            return true;
+        }
+
+        // Update file label when file is selected
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length) {
+                fileLabel.textContent = fileInput.files[0].name;
+            } else {
+                fileLabel.textContent = 'Choose APK file or drag here';
+            }
+        });
+
+        // Handle drag and drop
+        form.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileLabel.style.background = 'rgba(0, 255, 0, 0.1)';
+            fileLabel.style.borderStyle = 'solid';
+        });
+
+        form.addEventListener('dragleave', () => {
+            fileLabel.style.background = '';
+            fileLabel.style.borderStyle = 'dashed';
+        });
+
+        form.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileLabel.style.background = '';
+            fileLabel.style.borderStyle = 'dashed';
+            
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileLabel.textContent = fileInput.files[0].name;
+            }
+        });
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!fileInput.files.length) {
+                showStatus('Please select a file first!', 'error');
+                return;
+            }
+
+            if (!credentials && !promptCredentials()) {
+                showStatus('Authentication canceled', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            showStatus('<span class="spinner"></span> Starting unbundling...', '');
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+
+            try {
+                const formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+
+                let response = await fetch('/unbundle', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(`${credentials.username}:${credentials.password}`)
+                    }
+                });
+
+                if (response.status === 401) {
+                    credentials = null;
+                    throw new Error('Invalid credentials. Please try again.');
+                }
+
+                if (response.status === 429) {
+                    throw new Error('Rate limit exceeded. Please try again later.');
+                }
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to start unbundling');
+                }
+
+                const data = await response.json();
+                const taskId = data.task_id;
+
+                // Poll for progress
+                await pollTask(taskId);
+            } catch (err) {
+                console.error(err);
+                showStatus('Error: ' + err.message, 'error');
+                progressBar.style.display = 'none';
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        async function pollTask(taskId) {
+            while (true) {
+                const response = await fetch(`/progress/${taskId}`, {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa(`${credentials.username}:${credentials.password}`)
+                    }
+                });
+
+                if (response.status === 401) {
+                    throw new Error('Authentication expired');
+                }
+
+                const data = await response.json();
+
+                if (data.state === 'PROGRESS') {
+                    const progress = data.progress || 0;
+                    showStatus(`<span class="spinner"></span> Processing (${progress}%)...`, '');
+                    progressFill.style.width = `${progress}%`;
+                } else if (data.state === 'SUCCESS') {
+                    showStatus('Unbundling complete! Downloading...', 'success');
+                    progressFill.style.width = '100%';
+
+                    const downloadResponse = await fetch(data.download_url, {
+                        headers: {
+                            'Authorization': 'Basic ' + btoa(`${credentials.username}:${credentials.password}`)
+                        }
+                    });
+
+                    if (!downloadResponse.ok) {
+                        throw new Error('Failed to download file');
+                    }
+
+                    const blob = await downloadResponse.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `unbundled_${fileInput.files[0].name.split('.')[0]}.zip`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+
+                    setTimeout(() => {
+                        status.innerHTML = '';
+                        progressBar.style.display = 'none';
+                    }, 3000);
+                    break;
+                } else if (data.state === 'FAILURE') {
+                    throw new Error(data.error || 'Task failed');
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Poll every 1s
+            }
+        }
+
+        function showStatus(message, type) {
+            status.innerHTML = message;
+            status.className = type;
+        }
+    </script>
+
+</body>
+</html>
