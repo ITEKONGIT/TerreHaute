@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rebuild & Sign APK - APK Tool Suite</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: #00ff00;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .cyber-container {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            min-height: 100vh;
+        }
+
+        .cyber-sidebar {
+            background: #111111;
+            border-right: 2px solid #00ff00;
+            padding: 20px;
+        }
+
+        .cyber-sidebar h2 {
+            text-align: center;
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .cyber-nav a {
+            display: block;
+            color: #00ff00;
+            text-decoration: none;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #00ff00;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cyber-nav a:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .main-content {
+            padding: 40px;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+        }
+
+        .cyber-form {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #00ff00;
+            padding: 30px;
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .drag-drop-box {
+            border: 2px dashed #00ff00;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .drag-drop-box:hover {
+            background: rgba(0, 255, 0, 0.1);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+        }
+
+        .drag-drop-box::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(0, 255, 0, 0.1), transparent);
+            transform: rotate(45deg);
+            animation: scan 5s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { transform: rotate(45deg) translate(-50%, -50%); }
+            100% { transform: rotate(45deg) translate(50%, 50%); }
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 12px;
+            background: #000;
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            font-size: 16px;
+            margin: 8px 0;
+        }
+
+        input[type="submit"] {
+            width: 100%;
+            padding: 15px;
+            background: #000;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            cursor: pointer;
+            font-size: 18px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        input[type="submit"]:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 20px #00ff00;
+        }
+
+        input[type="submit"]:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status-message {
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 3px;
+            text-align: center;
+        }
+
+        .success {
+            background: rgba(0, 100, 0, 0.3);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+        }
+
+        .error {
+            background: rgba(100, 0, 0, 0.3);
+            border: 1px solid #ff0000;
+            color: #ff0000;
+        }
+
+        #fileStatus, #keystoreStatus {
+            margin-top: 10px;
+            color: #00ff00;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #1a1a1a;
+            border: 1px solid #00ff00;
+            margin-top: 10px;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #00ff00;
+            transition: width 0.3s ease;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 2px solid rgba(0, 255, 0, 0.3);
+            border-radius: 50%;
+            border-top-color: #00ff00;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .cyber-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .cyber-sidebar {
+                border-right: none;
+                border-bottom: 2px solid #00ff00;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .cyber-form {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cyber-container">
+        <nav class="cyber-sidebar">
+            <h2>APK Tool Suite</h2>
+            <div class="cyber-nav">
+                <a href="/">Unbundle APK</a>
+                <a href="/builder">Rebuild & Sign</a>
+                <a href="/about">About</a>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div class="cyber-form">
+                <h1>Rebuild & Sign APK</h1>
+                <div id="status" class="status-message"></div>
+                
+                <form method="POST" enctype="multipart/form-data" id="apkForm">
+                    <div class="form-group">
+                        <label for="file" class="drag-drop-box" id="dropZone">
+                            <span>DRAG & DROP ZIP FILE</span><br>
+                            <span style="font-size: 0.8em">or click to browse (.zip)</span>
+                            <div id="fileStatus"></div>
+                        </label>
+                        <input type="file" name="file" id="file" accept=".zip" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="keystore" class="drag-drop-box" id="keystoreDropZone">
+                            <span>DRAG & DROP KEYSTORE (OPTIONAL)</span><br>
+                            <span style="font-size: 0.8em">or click to browse (.keystore, .jks)</span>
+                            <div id="keystoreStatus"></div>
+                        </label>
+                        <input type="file" name="keystore" id="keystore" accept=".keystore,.jks">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="keystore_password">Keystore Password:</label>
+                        <input type="password" name="keystore_password" id="keystore_password" placeholder="Default: android">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="key_alias">Key Alias:</label>
+                        <input type="text" name="key_alias" id="key_alias" placeholder="Default: androiddebugkey">
+                    </div>
+
+                    <input type="submit" value="Rebuild & Sign APK" id="submitBtn">
+                </form>
+                <div id="progress" class="progress-bar" style="display: none;">
+                    <div id="progressFill" class="progress-fill" style="width: 0%;"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('file');
+        const fileStatus = document.getElementById('fileStatus');
+        const keystoreDropZone = document.getElementById('keystoreDropZone');
+        const keystoreInput = document.getElementById('keystore');
+        const keystoreStatus = document.getElementById('keystoreStatus');
+        const form = document.getElementById('apkForm');
+        const statusDiv = document.getElementById('status');
+        const submitBtn = document.getElementById('submitBtn');
+        const progressBar = document.getElementById('progress');
+        const progressFill = document.getElementById('progressFill');
+
+        // File input handlers
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.background = 'rgba(0, 255, 0, 0.1)';
+        });
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.style.background = '';
+        });
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.background = '';
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                updateFileStatus();
+            }
+        });
+        fileInput.addEventListener('change', updateFileStatus);
+
+        function updateFileStatus() {
+            fileStatus.textContent = fileInput.files.length ? `Selected: ${fileInput.files[0].name}` : '';
+        }
+
+        // Keystore input handlers
+        keystoreDropZone.addEventListener('click', () => keystoreInput.click());
+        keystoreDropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            keystoreDropZone.style.background = 'rgba(0, 255, 0, 0.1)';
+        });
+        keystoreDropZone.addEventListener('dragleave', () => {
+            keystoreDropZone.style.background = '';
+        });
+        keystoreDropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            keystoreDropZone.style.background = '';
+            if (e.dataTransfer.files.length) {
+                keystoreInput.files = e.dataTransfer.files;
+                updateKeystoreStatus();
+            }
+        });
+        keystoreInput.addEventListener('change', updateKeystoreStatus);
+
+        function updateKeystoreStatus() {
+            keystoreStatus.textContent = keystoreInput.files.length ? `Selected: ${keystoreInput.files[0].name}` : '';
+        }
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            statusDiv.style.display = 'none';
+
+            if (!fileInput.files.length) {
+                showStatus('Please select a ZIP file!', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.value = 'Processing...';
+            showStatus('<span class="spinner"></span> Starting rebuild...', '');
+            progressBar.style.display = 'block';
+            progressFill.style.width = '0%';
+
+            try {
+                const formData = new FormData(form);
+                const credentials = btoa('admin:password123');
+
+                let response = await fetch('/rebuild', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'Authorization': `Basic ${credentials}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    throw new Error('Invalid credentials');
+                } else if (response.status === 429) {
+                    throw new Error('Rate limit exceeded. Try again later.');
+                } else if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || 'Failed to start rebuild');
+                }
+
+                const data = await response.json();
+                await pollTask(data.task_id);
+            } catch (err) {
+                showStatus(`Error: ${err.message}`, 'error');
+                progressBar.style.display = 'none';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.value = 'Rebuild & Sign APK';
+            }
+        });
+
+        async function pollTask(taskId) {
+            const credentials = btoa('admin:password123');
+            while (true) {
+                const response = await fetch(`/progress/${taskId}`, {
+                    headers: {
+                        'Authorization': `Basic ${credentials}`
+                    }
+                });
+
+                if (response.status === 401) {
+                    throw new Error('Authentication expired');
+                }
+
+                const data = await response.json();
+
+                if (data.state === 'PROGRESS') {
+                    const progress = data.progress || 0;
+                    showStatus(`<span class="spinner"></span> Processing (${progress}%)...`, '');
+                    progressFill.style.width = `${progress}%`;
+                } else if (data.state === 'SUCCESS') {
+                    showStatus('Rebuild complete! Downloading...', 'success');
+                    progressFill.style.width = '100%';
+
+                    const downloadResponse = await fetch(data.download_url, {
+                        headers: {
+                            'Authorization': `Basic ${credentials}`
+                        }
+                    });
+
+                    if (!downloadResponse.ok) {
+                        throw new Error('Failed to download file');
+                    }
+
+                    const blob = await downloadResponse.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `rebuilt_${fileInput.files[0].name.replace('.zip', '.apk')}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+
+                    setTimeout(() => {
+                        statusDiv.style.display = 'none';
+                        progressBar.style.display = 'none';
+                        progressFill.style.width = '0%';
+                    }, 3000);
+                    break;
+                } else if (data.state === 'FAILURE') {
+                    throw new Error(data.error || 'Rebuild failed');
+                }
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+
+        function showStatus(message, type) {
+            statusDiv.innerHTML = message;
+            statusDiv.className = `status-message ${type}`;
+            statusDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

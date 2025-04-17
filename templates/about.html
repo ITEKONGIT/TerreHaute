@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - Terre Haute</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+
+        body {
+            background-color: #0a0a0a;
+            color: #00ff00;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+
+        .cyber-container {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            min-height: 100vh;
+        }
+
+        .cyber-sidebar {
+            background: #111111;
+            border-right: 2px solid #00ff00;
+            padding: 20px;
+        }
+
+        .cyber-sidebar h2 {
+            text-align: center;
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+
+        .cyber-nav a {
+            display: block;
+            color: #00ff00;
+            text-decoration: none;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #00ff00;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cyber-nav a:hover {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .main-content {
+            padding: 40px;
+            background: radial-gradient(circle at center, #1a1a1a 0%, #0a0a0a 100%);
+        }
+
+        .cyber-content {
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #00ff00;
+            padding: 30px;
+            background: rgba(0, 255, 0, 0.05);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        h2 {
+            margin-top: 30px;
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 10px;
+        }
+
+        p {
+            line-height: 1.6;
+            margin: 15px 0;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        ul li {
+            margin: 12px 0;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        ul li::before {
+            content: '>>';
+            position: absolute;
+            left: 0;
+            color: #00ff00;
+        }
+
+        .disclaimer {
+            font-size: 0.9em;
+            opacity: 0.7;
+            margin-top: 30px;
+            padding: 15px;
+            border: 1px solid #00ff00;
+            text-align: center;
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        .screenshot-placeholder {
+            margin: 20px 0;
+            text-align: center;
+            font-style: italic;
+            opacity: 0.6;
+        }
+
+        @media (max-width: 768px) {
+            .cyber-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .cyber-sidebar {
+                border-right: none;
+                border-bottom: 2px solid #00ff00;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+            
+            .cyber-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cyber-container">
+        <nav class="cyber-sidebar">
+            <h2>Terre Haute</h2>
+            <div class="cyber-nav">
+                <a href="/">Unbundle APK</a>
+                <a href="/builder">Rebuild & Sign</a>
+                <a href="/about">About</a>
+            </div>
+        </nav>
+
+        <main class="main-content">
+            <div class="cyber-content">
+                <h1>Terre Haute</h1>
+                <p>A lightweight web tool for reverse engineering and rebuilding Android APKs locally.</p>
+                
+                <h2>What It Does</h2>
+                <p>Terre Haute empowers developers, security researchers, and Android enthusiasts to:</p>
+                <ul>
+                    <li>Decompile APKs into human-readable Smali and XML using Apktool.</li>
+                    <li>Rebuild modified APKs with precision.</li>
+                    <li>Sign APKs with custom or debug keystores using jarsigner.</li>
+                    <li>Keep all operations local—no data ever leaves your machine.</li>
+                </ul>
+
+                <h2>Why It Exists</h2>
+                <p>Many APK tools rely on online servers, risking privacy and security. Terre Haute runs entirely offline, giving you full control and confidentiality over your files. It’s built for those who demand trust and autonomy in their tools.</p>
+
+                <h2>Who It’s For</h2>
+                <ul>
+                    <li>Penetration testers & ethical hackers</li>
+                    <li>Android developers</li>
+                    <li>Reverse engineers</li>
+                    <li>Malware analysts</li>
+                    <li>Privacy-conscious power users</li>
+                </ul>
+
+                <h2>Features</h2>
+                <ul>
+                    <li>APK decompilation using Apktool</li>
+                    <li>APK recompilation with detailed error logging</li>
+                    <li>APK signing with SHA1withRSA</li>
+                    <li>Built-in keystore support (debug and custom)</li>
+                    <li>No cloud storage—everything stays local</li>
+                    <li>Cyberpunk web interface powered by Flask and Celery</li>
+                    <li>Secure uploads with rate limiting and authentication</li>
+                </ul>
+
+                <h2>Credits</h2>
+                <p>Built with:</p>
+                <ul>
+                    <li>Apktool for decompilation</li>
+                    <li>jarsigner for signing</li>
+                    <li>Flask and Celery for the web interface</li>
+                </ul>
+                <p>Created by Cocofelon for educational and research purposes.</p>
+
+                <div class="screenshot-placeholder">
+                    [Screenshots or GIFs of Terre Haute in action coming soon]
+                </div>
+
+                <div class="disclaimer">
+                    ⚠️ Terre Haute is for legal and ethical use only. Do not modify or redistribute applications without proper authorization.
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
