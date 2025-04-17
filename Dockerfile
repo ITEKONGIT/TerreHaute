@@ -1,7 +1,6 @@
 FROM python:3.12-slim
 RUN apt-get update && apt-get install -y \
-    openjdk-11-jdk \
-    redis-server \
+    openjdk-17-jdk \
     unzip \
     wget \
     && rm -rf /var/lib/apt/lists/*
@@ -17,6 +16,4 @@ RUN keytool -genkey -v -keystore /app/debug.keystore -alias androiddebugkey \
 COPY app.py .
 COPY templates/ templates/
 EXPOSE 5000
-CMD redis-server --daemonize yes && \
-    celery -A app.celery worker --loglevel=info & \
-    python app.py
+CMD ["python", "app.py"]
